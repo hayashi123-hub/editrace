@@ -73,6 +73,37 @@ function registerHandlers(): void {
 
   handle('essay:save', (id: string, input: unknown) => library.save(id, input));
   handle('library:list', () => library.list());
+  handle('library:rename', (id: string, title: string) => library.rename(id, title));
+  handle('library:delete', (id: string) => library.delete(id));
+  handle('library:confirm-delete', async (title: string) => {
+    const result = await dialog.showMessageBox(window, {
+      type: 'warning',
+      message: t('deleteConfirm', { title }),
+      buttons: [t('cancel'), t('delete')],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    });
+    return result.response === 1;
+  });
+  handle('library:menu', () => new Promise<string | null>((resolve) => {
+    const item = (action: string, label: MessageKey) => ({
+      label: t(label), click: () => resolve(action),
+    });
+    Menu.buildFromTemplate([
+      item('open', 'openTitle'),
+      item('rename', 'rename'),
+      { type: 'separator' },
+      { label: t('export'), submenu: [
+        item('export-essay', 'practiceFile'),
+        item('export-original', 'original'),
+        item('export-final', 'final'),
+        item('export-html', 'html'),
+      ] },
+      { type: 'separator' },
+      item('delete', 'deleteEssay'),
+    ]).popup({ window, callback: () => resolve(null) });
+  }));
   handle('library:load', (id: string) => {
     const essay = library.get(id);
     if (!essay) throw new Error(t('essayMissing'));

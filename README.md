@@ -12,7 +12,8 @@ A lightweight Windows editor for reviewing your foreign-language writing. Works 
 2. Type or paste your essay, or choose **File → Import file**.
 3. Click **Start review**. Type to add text, or select text and type to replace it. Click **Stop review** to return to normal editing.
 4. Press **Ctrl+S** to save to your local library. Select a saved essay in the sidebar to open it.
-5. Use **File** to rename or export an essay, and **Settings** to change the language or correction style.
+5. Right-click a saved essay in the sidebar to open, rename, export, or delete it. Renaming updates the library immediately; deleting asks for confirmation.
+6. Use **File** to rename or export an essay, and **Settings** to change the language or correction style.
 
 ## Download
 

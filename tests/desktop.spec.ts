@@ -96,7 +96,7 @@ test('review toggle restores normal editing and bottom bar tracks the revised te
     await select(page, 2, 4);
     await page.keyboard.type('went');
     await expect(page.locator('[data-kind="deleted"]')).toHaveText('go');
-    await expect(page.locator('#word-count')).toHaveText('3 词 · 10 字符');
+    await expect(page.locator('#word-count')).toHaveText('3 words');
     await page.locator('#review-toggle').click();
     await expect(page.locator('#review-toggle')).toHaveAttribute('aria-pressed', 'false');
     await select(page, 0);
@@ -108,7 +108,7 @@ test('review toggle restores normal editing and bottom bar tracks the revised te
     await page.keyboard.type('away');
     await expectText(page, 'Yesterday I went away.');
     await expect(page.locator('[data-kind="deleted"]')).toHaveText('go');
-    await expect(page.locator('#word-count')).toHaveText('4 词 · 19 字符');
+    await expect(page.locator('#word-count')).toHaveText('4 words');
     await page.keyboard.press('Control+z');
     await expectText(page, 'Yesterday I went home.');
     await page.locator('#review-toggle').click();
@@ -123,7 +123,7 @@ test('review toggle restores normal editing and bottom bar tracks the revised te
     await page.screenshot({ path: info.outputPath('editor-sidebar.png') });
     await page.locator('#sidebar-toggle').click();
     await expect(page.locator('#sidebar')).toBeHidden();
-    await expect(page.locator('.menu-trigger')).toHaveText(['文件', '编辑', '设置']);
+    await expect(page.locator('.menu-trigger')).toHaveText(['File', 'Edit', 'Settings']);
     await expect(page.locator('.menubar > .menu')).toHaveCount(3);
   } finally {
     await app.close();
@@ -138,7 +138,7 @@ test('six languages and text styles apply immediately, persist and reach HTML ex
     await select(page, 2, 4);
     await page.keyboard.type('went');
     await expect(page.locator('[data-kind="added"]')).toHaveCSS('font-weight', '600');
-    await menu(page, '设置', 'settings');
+    await menu(page, 'Settings', 'settings');
     const languages = ['zh-CN', 'en', 'de', 'fr', 'es', 'ja'];
     const files = ['文件', 'File', 'Datei', 'Fichier', 'Archivo', 'ファイル'];
     for (let i = 0; i < languages.length; i++) {
@@ -155,7 +155,7 @@ test('six languages and text styles apply immediately, persist and reach HTML ex
     await page.locator('#settings-close').click();
     await expect(page.locator('[data-kind="added"]')).toHaveCSS('font-weight', '400');
     await expect(page.locator('[data-kind="added"]')).toHaveCSS('font-style', 'italic');
-    await expect(page.locator('#word-count')).toHaveText('3 words · 10 characters');
+    await expect(page.locator('#word-count')).toHaveText('3 words');
     const exported = info.outputPath('styled.html');
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = (async (_window: unknown, options: { title: string }) => {
@@ -255,11 +255,11 @@ test('mouse word selection preserves spaces and hover menus keep the selection',
     await select(page, 14);
     await page.keyboard.type('Daily ');
     await expectText(page, 'I went home.\n\nDaily Practice makes progress.');
-    await menu(page, '编辑', 'undo');
+    await menu(page, 'Edit', 'undo');
     await expectText(page, 'I went home.\n\nPractice makes progress.');
-    await menu(page, '编辑', 'redo');
+    await menu(page, 'Edit', 'redo');
     await expectText(page, 'I went home.\n\nDaily Practice makes progress.');
-    await menu(page, '文件', 'rename');
+    await menu(page, 'File', 'rename');
     await page.locator('#title-input').fill('Daily practice');
     await page.locator('#title-input').press('Enter');
     await expect(page).toHaveTitle(/Daily practice/);
@@ -271,7 +271,7 @@ test('mouse word selection preserves spaces and hover menus keep the selection',
       'rgba(0, 0, 0, 0)',
     );
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(560, 440));
-    await expect(page.getByRole('menuitem', { name: '设置', exact: true })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Settings', exact: true })).toBeVisible();
     await expect(page.locator('.status-bar')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
@@ -389,18 +389,18 @@ test('save, export, restart recovery and compatibility with existing essay files
         throw new Error('Ctrl+S must not open a path picker');
       }) as typeof dialog.showSaveDialog;
     });
-    await menu(page, '文件', 'save');
+    await menu(page, 'File', 'save');
     await expect(page.locator('.essay-item')).toHaveCount(1);
     const saved = path.join(root, 'practice.essay');
     await saveDialog(app, saved);
-    await menu(page, '文件', 'export-essay');
+    await menu(page, 'File', 'export-essay');
     await expect
       .poll(async () => JSON.parse(await readFile(saved, 'utf8')).revisions.length)
       .toBe(2);
     for (const kind of ['original', 'final', 'html'] as const) {
       const file = path.join(root, `${kind}.${kind === 'html' ? 'html' : 'txt'}`);
       await saveDialog(app, file);
-      await menu(page, '文件', `export-${kind}`);
+      await menu(page, 'File', `export-${kind}`);
       await expect
         .poll(async () => {
           try {
@@ -432,7 +432,7 @@ test('save, export, restart recovery and compatibility with existing essay files
         filePaths: [saved],
       })) as typeof dialog.showOpenDialog;
     }, saved);
-    await menu(page, '文件', 'open');
+    await menu(page, 'File', 'open');
     await expectText(page, 'I went home.\nTomorrow too.');
     await expect(page.locator('#review-toggle')).toHaveAttribute('aria-pressed', 'false');
     await page.locator('#review-toggle').click();
@@ -474,10 +474,9 @@ test('local library saves without dialogs, switches safely and updates the same 
     await expect(page.locator('.essay-title')).toHaveText(['Alpha essay.']);
     await page.keyboard.press('Control+s');
     await expect(page.locator('.essay-item')).toHaveCount(1);
-    await menu(page, '文件', 'rename');
+    await menu(page, 'File', 'rename');
     await page.locator('#title-input').fill('My essay');
     await page.locator('#title-input').press('Enter');
-    await page.keyboard.press('Control+s');
     await expect(page.locator('.essay-title')).toHaveText(['My essay']);
     await page.keyboard.press('Control+n');
     await expectText(page, '');
@@ -579,12 +578,12 @@ test('clipboard menu commands still edit the document', async ({}, info) => {
     await page.locator('#editor').focus();
     await page.keyboard.insertText('Hello world');
     await select(page, 6, 11);
-    await menu(page, '编辑', 'cut');
+    await menu(page, 'Edit', 'cut');
     await expectText(page, 'Hello ');
     expect(
       await app.evaluate(async ({ clipboard }) => (await clipboard.readText()) === 'world'),
     ).toBe(true);
-    await menu(page, '编辑', 'paste');
+    await menu(page, 'Edit', 'paste');
     await expectText(page, 'Hello world');
     await page.keyboard.press('Control+s');
     await expect(page.locator('.essay-title')).toHaveText(['Hello world']);
@@ -606,7 +605,7 @@ test('TXT encoding preview and button-based review start', async ({}, info) => {
         filePaths: [file],
       })) as typeof dialog.showOpenDialog;
     }, file);
-    await menu(page, '文件', 'open');
+    await menu(page, 'File', 'open');
     await page.locator('#encoding-select').selectOption('windows-1252');
     await expect(page.locator('#import-preview')).toHaveText('café\nHi');
     await page.locator('#import-confirm').click();
@@ -621,4 +620,123 @@ test('TXT encoding preview and button-based review start', async ({}, info) => {
   } finally {
     await app.close();
   }
+});
+
+async function chooseLibraryAction(app: ElectronApplication, labels: string[]) {
+  // Native Electron menus live outside the DOM; choose their real MenuItem callback.
+  await app.evaluate(({ Menu }, labels) => {
+    const original = Menu.prototype.popup;
+    Menu.prototype.popup = function (options) {
+      Menu.prototype.popup = original;
+      let current: Electron.Menu = this;
+      for (const [index, label] of labels.entries()) {
+        const item = current.items.find((item) => item.label === label);
+        if (!item) throw new Error(`Missing native menu item: ${label}`);
+        if (index === labels.length - 1) item.click(item, undefined, {} as Electron.KeyboardEvent);
+        else current = item.submenu!;
+      }
+      options?.callback?.();
+    };
+  }, labels);
+}
+
+test('rename refreshes the sidebar immediately and persists without saving unsaved body edits', async ({}, info) => {
+  const profile = info.outputPath('profile');
+  let { app, page } = await launch(profile);
+  try {
+    await page.locator('#editor').focus();
+    await page.keyboard.insertText('Saved text');
+    await page.keyboard.press('Control+s');
+    await expect(page.locator('.essay-title')).toHaveText(['Saved text']);
+    await page.keyboard.insertText(' unsaved');
+    await menu(page, 'File', 'rename');
+    await page.locator('#title-input').fill('New title');
+    await page.locator('#title-input').press('Enter');
+    await expect(page.locator('.essay-title')).toHaveText(['New title']);
+    await expect(page).toHaveTitle('New title · — editrace');
+    await expectText(page, 'Saved text unsaved');
+    await page.keyboard.press('Control+z');
+    await expectText(page, 'Saved text');
+    await expect(page).toHaveTitle('New title — editrace');
+    await page.keyboard.press('Control+Shift+z');
+    await expectText(page, 'Saved text unsaved');
+    await app.close();
+    ({ app, page } = await launch(profile));
+    await expect(page.locator('.essay-title')).toHaveText(['New title']);
+    await expectText(page, 'Saved text unsaved');
+    await expect(page).toHaveTitle('New title · — editrace');
+    const saved = await page.evaluate(async () => {
+      const [entry] = await window.desktop.listEssays();
+      return window.desktop.loadEssay(entry.id);
+    });
+    expect(saved.title).toBe('New title');
+    expect(saved.original).toBe('Saved text');
+  } finally { await app.close(); }
+});
+
+test('sidebar context menu targets the clicked essay for rename, export, open and confirmed deletion', async ({}, info) => {
+  const profile = info.outputPath('profile');
+  let { app, page } = await launch(profile);
+  const item = (title: string) => page.locator('.essay-item').filter({ has: page.getByText(title, { exact: true }) });
+  try {
+    await page.locator('#editor').focus();
+    await page.keyboard.insertText('Alpha');
+    await page.keyboard.press('Control+s');
+    await expect(page.locator('.essay-title')).toHaveText(['Alpha']);
+    await page.keyboard.press('Control+n');
+    await expectText(page, '');
+    await page.keyboard.insertText('Beta');
+    await page.keyboard.press('Control+s');
+    await expect(page.locator('.essay-title')).toHaveText(['Beta', 'Alpha']);
+    await page.keyboard.insertText(' draft');
+    await chooseLibraryAction(app, ['Rename…']);
+    await item('Alpha').click({ button: 'right' });
+    await page.locator('#title-input').fill('Renamed Alpha');
+    await page.locator('#title-input').press('Enter');
+    await expect(item('Renamed Alpha')).toHaveCount(1);
+    await expectText(page, 'Beta draft');
+    await expect(page).toHaveTitle('Beta · — editrace');
+    const exported = info.outputPath('alpha.essay');
+    await saveDialog(app, exported);
+    await chooseLibraryAction(app, ['Export', 'Practice file']);
+    await item('Renamed Alpha').click({ button: 'right' });
+    await expect.poll(async () => {
+      try { return JSON.parse(await readFile(exported, 'utf8')).title; } catch { return ''; }
+    }).toBe('Renamed Alpha');
+    expect(JSON.parse(await readFile(exported, 'utf8')).original).toBe('Alpha');
+    await app.evaluate(({ dialog }) => {
+      dialog.showMessageBox = async () => ({ response: 2, checkboxChecked: false });
+    });
+    await chooseLibraryAction(app, ['Open essay']);
+    await item('Renamed Alpha').click({ button: 'right' });
+    await expectText(page, 'Beta draft');
+    await expect(page.locator('body')).toHaveAttribute('aria-busy', 'false');
+    await page.keyboard.press('Control+s');
+    await expect(page).toHaveTitle('Beta — editrace');
+    await chooseLibraryAction(app, ['Open essay']);
+    await item('Renamed Alpha').click({ button: 'right' });
+    await expectText(page, 'Alpha');
+    await app.evaluate(({ dialog }) => {
+      dialog.showMessageBox = async () => ({ response: 0, checkboxChecked: false });
+    });
+    await chooseLibraryAction(app, ['Delete essay…']);
+    await item('Beta').click({ button: 'right' });
+    await expect(item('Beta')).toHaveCount(1);
+    await expect(page.locator('body')).toHaveAttribute('aria-busy', 'false');
+    await app.evaluate(({ dialog }) => {
+      dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false });
+    });
+    await chooseLibraryAction(app, ['Delete essay…']);
+    await item('Beta').click({ button: 'right' });
+    await expect(item('Beta')).toHaveCount(0);
+    await expectText(page, 'Alpha');
+    await chooseLibraryAction(app, ['Delete essay…']);
+    await item('Renamed Alpha').click({ button: 'right' });
+    await expect(page.locator('.essay-item')).toHaveCount(0);
+    await expectText(page, '');
+    await app.close();
+    ({ app, page } = await launch(profile));
+    await expect(page.locator('.essay-item')).toHaveCount(0);
+    await expectText(page, '');
+  } finally { await app.close(); }
 });

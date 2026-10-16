@@ -81,11 +81,13 @@ export class EssayLibrary {
     const now = new Date().toISOString();
     this.db.exec('BEGIN IMMEDIATE');
     try {
+      // Advance the tie-breaker when rapid saves share the same timestamp.
       this.db
         .prepare(
           `INSERT INTO essays(id, title, document, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET title = excluded.title, document = excluded.document, updated_at = excluded.updated_at`,
+        ON CONFLICT(id) DO UPDATE SET title = excluded.title, document = excluded.document,
+          updated_at = excluded.updated_at, rowid = (SELECT MAX(rowid) + 1 FROM essays)`,
         )
         .run(id, essay.title, document, now, now);
       this.writeSession(id, document);
@@ -95,6 +97,39 @@ export class EssayLibrary {
       throw error;
     }
     return essay;
+  }
+
+  rename(id: string, title: string): Essay {
+    const saved = this.get(id);
+    if (!saved) throw new Error('ESSAY_MISSING');
+    const renamed = parseEssay({ ...saved, title });
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.db
+        .prepare('UPDATE essays SET title = ?, document = ? WHERE id = ?')
+        .run(renamed.title, JSON.stringify(renamed), id);
+      const session = this.recover();
+      if (session?.id === id)
+        this.writeSession(id, JSON.stringify({ ...session.essay, title: renamed.title }));
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+    return renamed;
+  }
+
+  delete(id: string): void {
+    validateId(id);
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.db.prepare('DELETE FROM essays WHERE id = ?').run(id);
+      this.db.prepare('DELETE FROM session WHERE essay_id = ?').run(id);
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
   }
 
   // Recovery is separate from explicit saves, so unsaved edits never replace a saved essay.

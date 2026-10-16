@@ -290,7 +290,8 @@ test('settings validate values, translate every language and control HTML stylin
   });
   for (const language of languages) {
     assert.ok(translate(language, 'file').length > 0);
-    assert.ok(translate(language, 'count', { words: 1, characters: 5 }).includes('5'));
+    assert.ok(translate(language, 'count', { words: 1 }).includes('1'));
+    assert.ok(!translate(language, 'count', { words: 1 }).includes('{'));
   }
   assert.equal(translateError('en', '修改位置无效。'), 'The edit position or revision is invalid.');
   const html = exportHtml(putRevision(sample(), replacement), {

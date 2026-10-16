@@ -16,7 +16,8 @@ function fixture() {
   };
 }
 
-test('saved essays survive restart, update by ID and allow identical titles', () => {
+test('saved essays survive restart, update by ID and allow identical titles', (context) => {
+  context.mock.timers.enable({ apis: ['Date'], now: new Date('2026-01-01T00:00:00Z') });
   const { file, cleanup } = fixture();
   let library = new EssayLibrary(file);
   try {
@@ -122,6 +123,56 @@ test('an invalid or future database fails without replacing the existing data', 
     connection.close();
     assert.throws(() => new EssayLibrary(file), /LIBRARY_VERSION/);
   } finally {
+    cleanup();
+  }
+});
+
+test('rename persists only the title and preserves unsaved recovery and other essays', () => {
+  const { file, cleanup } = fixture();
+  let library = new EssayLibrary(file);
+  const a = randomUUID(), b = randomUUID();
+  try {
+    library.save(a, newEssay('Saved body', 'First'));
+    library.save(b, newEssay('Other body', 'Second'));
+    library.autosave(a, newEssay('Unsaved body', 'First'));
+    library.rename(b, 'Other renamed');
+    assert.equal(library.recover()!.essay.title, 'First');
+    library.rename(a, 'Renamed');
+    assert.equal(library.get(a)!.original, 'Saved body');
+    assert.equal(library.recover()!.essay.original, 'Unsaved body');
+    assert.equal(library.recover()!.essay.title, 'Renamed');
+    assert.throws(() => library.rename(a, 'x'.repeat(201)));
+    assert.throws(() => library.rename(randomUUID(), 'Missing'));
+    library.close();
+    library = new EssayLibrary(file);
+    assert.equal(library.get(a)!.title, 'Renamed');
+    assert.equal(library.get(b)!.title, 'Other renamed');
+    assert.equal(library.recover()!.essay.title, 'Renamed');
+  } finally {
+    library.close();
+    cleanup();
+  }
+});
+
+test('delete removes only the target and its recovery without resurrecting it after restart', () => {
+  const { file, cleanup } = fixture();
+  let library = new EssayLibrary(file);
+  const a = randomUUID(), b = randomUUID();
+  try {
+    library.save(a, newEssay('First'));
+    library.save(b, newEssay('Second'));
+    library.delete(a);
+    assert.equal(library.get(a), null);
+    assert.equal(library.recover()!.id, b);
+    assert.throws(() => library.delete('invalid'));
+    library.delete(b);
+    assert.equal(library.recover(), null);
+    library.close();
+    library = new EssayLibrary(file);
+    assert.deepEqual(library.list(), []);
+    assert.equal(library.recover(), null);
+  } finally {
+    library.close();
     cleanup();
   }
 });

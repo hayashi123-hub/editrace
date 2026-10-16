@@ -27,6 +27,7 @@ const actionButton = (action: string) =>
 let essay = newEssay();
 let essayId: string = crypto.randomUUID();
 let libraryEntries: EssaySummary[] = [];
+let renameTarget: string | null = null;
 let storageReady = false;
 let reviewActive = false;
 let settings = { ...defaultSettings };
@@ -76,6 +77,7 @@ function errorMessage(error: unknown) {
 async function fileAction(action: () => Promise<void>) {
   if (!storageReady || fileBusy || view.composing) return;
   fileBusy = true;
+  document.body.setAttribute('aria-busy', 'true');
   try {
     await pendingSettings;
     await action();
@@ -83,6 +85,7 @@ async function fileAction(action: () => Promise<void>) {
     message(errorMessage(error));
   } finally {
     fileBusy = false;
+    document.body.setAttribute('aria-busy', 'false');
   }
 }
 async function persist() {
@@ -117,10 +120,54 @@ function renderLibrary() {
         await load(next, true, item.id);
       });
     };
+    button.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      void libraryMenu(item);
+    });
+    button.addEventListener('keydown', (event) => {
+      if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+        event.preventDefault();
+        void libraryMenu(item);
+      }
+    });
     list.append(button);
   }
   $('library-empty').hidden = libraryEntries.length > 0;
 }
+function showRename(id: string, title: string) {
+  renameTarget = id;
+  $<HTMLInputElement>('title-input').value = title === '未命名作文' ? '' : title;
+  renameDialog.showModal();
+  $<HTMLInputElement>('title-input').select();
+}
+
+async function libraryMenu(item: EssaySummary) {
+  if (document.querySelector('dialog[open]')) return;
+  menus.close();
+  await fileAction(async () => {
+    const action = await window.desktop.essayMenu();
+    if (!action) return;
+    if (action === 'open') {
+      if (item.id !== essayId && (await canReplace()))
+        await load(await window.desktop.loadEssay(item.id), true, item.id);
+    } else if (action === 'rename') {
+      showRename(item.id, item.id === essayId ? essay.title : item.title);
+    } else if (action === 'delete') {
+      const title = item.id === essayId ? essay.title : item.title;
+      if (!(await window.desktop.confirmDelete(title === '未命名作文' ? t('untitled') : title))) return;
+      // Finish any pending recovery write before deletion so it cannot restore the entry.
+      if (item.id === essayId) await persist();
+      await window.desktop.deleteEssay(item.id);
+      libraryEntries = await window.desktop.listEssays();
+      if (item.id === essayId) await load(newEssay(), true);
+      else renderLibrary();
+    } else if (action.startsWith('export-')) {
+      const target = item.id === essayId ? essay : await window.desktop.loadEssay(item.id);
+      await window.desktop.export(target, action.slice(7) as 'original' | 'final' | 'html' | 'essay');
+    }
+  });
+}
+
 function updateMenus() {
   actionButton('undo').disabled = !undoStack.length;
   actionButton('redo').disabled = !redoStack.length;
@@ -293,9 +340,7 @@ function run(action: string) {
     return;
   }
   if (action === 'rename') {
-    $<HTMLInputElement>('title-input').value = essay.title === '未命名作文' ? '' : essay.title;
-    renameDialog.showModal();
-    $<HTMLInputElement>('title-input').select();
+    showRename(essayId, essay.title);
     return;
   }
   void fileAction(async () => {
@@ -392,10 +437,28 @@ $('import-confirm').onclick = () => {
 };
 $('rename-form').addEventListener('submit', (event) => {
   event.preventDefault();
-  essay = { ...essay, title: $<HTMLInputElement>('title-input').value.trim() || '未命名作文' };
-  renameDialog.close();
-  changed();
-  view.focus();
+  const id = renameTarget;
+  const title = $<HTMLInputElement>('title-input').value.trim() || '未命名作文';
+  if (!id) return;
+  void fileAction(async () => {
+    const saved = libraryEntries.some((item) => item.id === id);
+    if (saved) {
+      if (id === essayId) await persist();
+      await window.desktop.renameEssay(id, title);
+    }
+    if (id === essayId) {
+      essay = { ...essay, title };
+      if (saved && savedSnapshot)
+        savedSnapshot = JSON.stringify({ ...JSON.parse(savedSnapshot), title });
+      for (const entry of [...undoStack, ...redoStack]) entry.essay.title = title;
+      changed();
+    }
+    libraryEntries = await window.desktop.listEssays();
+    renderLibrary();
+    renameDialog.close();
+    renameTarget = null;
+    view.focus();
+  });
 });
 $('rename-cancel').onclick = () => {
   renameDialog.close();

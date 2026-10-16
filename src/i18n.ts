@@ -80,6 +80,23 @@ const messages = {
     'No se puede abrir la biblioteca local',
     '作文ライブラリを開けません',
   ],
+  deleteEssay: [
+    '删除作文…',
+    'Delete essay…',
+    'Aufsatz löschen…',
+    'Supprimer la rédaction…',
+    'Eliminar redacción…',
+    '作文を削除…',
+  ],
+  delete: ['删除', 'Delete', 'Löschen', 'Supprimer', 'Eliminar', '削除'],
+  deleteConfirm: [
+    '删除“{title}”？此操作无法撤销。',
+    'Delete “{title}”? This cannot be undone.',
+    '„{title}“ löschen? Dies kann nicht rückgängig gemacht werden.',
+    'Supprimer « {title} » ? Cette action est irréversible.',
+    '¿Eliminar «{title}»? Esta acción no se puede deshacer.',
+    '「{title}」を削除しますか？この操作は取り消せません。',
+  ],
   rename: ['重命名…', 'Rename…', 'Umbenennen…', 'Renommer…', 'Cambiar nombre…', '名前を変更…'],
   name: [
     '作文名称',
@@ -437,6 +454,7 @@ export function translate(
 }
 
 export function translateError(language: Language, message: string): string {
+  if (message === 'ESSAY_MISSING') return translate(language, 'essayMissing');
   if (message.includes('50 万字符')) return translate(language, 'tooLong');
   if (message.includes('12 MB')) return translate(language, 'tooLarge');
   if (message.includes('修改记录过多')) return translate(language, 'tooMany');

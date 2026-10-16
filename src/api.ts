@@ -14,6 +14,10 @@ export interface DesktopApi {
   save(id: string, essay: Essay): Promise<Essay>;
   listEssays(): Promise<EssaySummary[]>;
   loadEssay(id: string): Promise<Essay>;
+  renameEssay(id: string, title: string): Promise<Essay>;
+  deleteEssay(id: string): Promise<void>;
+  confirmDelete(title: string): Promise<boolean>;
+  essayMenu(): Promise<string | null>;
   export(essay: Essay, kind: 'original' | 'final' | 'html' | 'essay'): Promise<string | null>;
   recover(): Promise<{ session: Recovery | null; warning?: string }>;
   autosave(id: string, essay: Essay): Promise<void>;
