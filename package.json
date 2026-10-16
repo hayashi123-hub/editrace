@@ -1,0 +1,25 @@
+{
+  "name": "editrace",
+  "productName": "editrace",
+  "version": "0.1.0",
+  "description": "A local-first editor for practicing foreign-language writing.",
+  "private": true,
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/model.test.ts tests/library.test.ts",
+    "test:ui": "npm run build && playwright test",
+    "package": "npm run build && node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "@playwright/test": "1.64.0",
+    "@types/node": "24.19.2",
+    "electron": "44.7.1",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  },
+  "type": "module"
+}

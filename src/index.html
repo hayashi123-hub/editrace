@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>editrace</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./renderer.js" defer></script>
+  </head>
+  <body data-added-bold="true" data-added-italic="false">
+    <header class="app-header">
+      <nav class="menubar" role="menubar" data-i18n-aria="menus" aria-label="应用菜单">
+        <div class="menu">
+          <button
+            class="menu-trigger"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            data-i18n="file"
+          >
+            文件
+          </button>
+          <div class="menu-panel" role="menu" hidden>
+            <button role="menuitem" data-action="new">
+              <span data-i18n="new">新建</span><kbd>Ctrl+N</kbd>
+            </button>
+            <button role="menuitem" data-action="open">
+              <span data-i18n="open">打开…</span><kbd>Ctrl+O</kbd>
+            </button>
+            <hr />
+            <button role="menuitem" data-action="save">
+              <span data-i18n="save">保存练习</span><kbd>Ctrl+S</kbd>
+            </button>
+            <button role="menuitem" data-action="rename">
+              <span data-i18n="rename">重命名…</span>
+            </button>
+            <hr />
+            <div class="menu-label" data-i18n="export">导出</div>
+            <button role="menuitem" data-action="export-essay">
+              <span data-i18n="practiceFile">练习文件</span><kbd>.essay</kbd>
+            </button>
+            <button role="menuitem" data-action="export-original">
+              <span data-i18n="original">原始作文</span><kbd>TXT</kbd>
+            </button>
+            <button role="menuitem" data-action="export-final">
+              <span data-i18n="final">修改后的作文</span><kbd>TXT</kbd>
+            </button>
+            <button role="menuitem" data-action="export-html">
+              <span data-i18n="html">带批改标记的作文</span><kbd>HTML</kbd>
+            </button>
+          </div>
+        </div>
+        <div class="menu">
+          <button
+            class="menu-trigger"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            data-i18n="edit"
+          >
+            编辑
+          </button>
+          <div class="menu-panel" role="menu" hidden>
+            <button role="menuitem" data-action="undo" disabled>
+              <span data-i18n="undo">撤销</span><kbd>Ctrl+Z</kbd>
+            </button>
+            <button role="menuitem" data-action="redo" disabled>
+              <span data-i18n="redo">重做</span><kbd>Ctrl+Shift+Z</kbd>
+            </button>
+            <hr />
+            <button role="menuitem" data-action="cut">
+              <span data-i18n="cut">剪切</span><kbd>Ctrl+X</kbd>
+            </button>
+            <button role="menuitem" data-action="copy">
+              <span data-i18n="copy">复制</span><kbd>Ctrl+C</kbd>
+            </button>
+            <button role="menuitem" data-action="paste">
+              <span data-i18n="paste">粘贴</span><kbd>Ctrl+V</kbd>
+            </button>
+            <button role="menuitem" data-action="select-all">
+              <span data-i18n="selectAll">全选</span><kbd>Ctrl+A</kbd>
+            </button>
+          </div>
+        </div>
+        <div class="menu">
+          <button
+            class="menu-trigger"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            data-i18n="settings"
+          >
+            设置
+          </button>
+          <div class="menu-panel" role="menu" hidden>
+            <button role="menuitem" data-action="settings">
+              <span data-i18n="appSettings">应用设置…</span><kbd>Ctrl+,</kbd>
+            </button>
+          </div>
+        </div>
+      </nav>
+      <button id="review-toggle" aria-pressed="false">开始批改</button>
+    </header>
+    <div class="editor-layout">
+      <aside id="sidebar" data-i18n-aria="sidebar" aria-label="侧边栏">
+        <div class="library-heading" data-i18n="library">本地作文</div>
+        <div id="essay-list"></div>
+        <p id="library-empty" data-i18n="libraryEmpty">Ctrl+S 保存后显示在这里</p>
+      </aside>
+      <main id="editor-scroll">
+        <div
+          id="editor"
+          contenteditable="false"
+          role="textbox"
+          data-i18n-aria="editor"
+          aria-label="作文编辑器"
+          aria-multiline="true"
+          spellcheck="false"
+        ></div>
+      </main>
+    </div>
+    <footer class="status-bar">
+      <button
+        id="sidebar-toggle"
+        aria-expanded="true"
+        aria-controls="sidebar"
+        aria-label="收起侧边栏"
+      >
+        <span aria-hidden="true">‹</span>
+      </button>
+      <span id="word-count"></span>
+    </footer>
+    <div id="toast" role="alert" hidden></div>
+    <dialog id="settings-dialog" aria-labelledby="settings-heading">
+      <h2 id="settings-heading" data-i18n="settings">设置</h2>
+      <div class="setting-row">
+        <label for="language-select" data-i18n="language">界面语言</label>
+        <select id="language-select">
+          <option value="zh-CN">简体中文</option>
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+          <option value="fr">Français</option>
+          <option value="es">Español</option>
+          <option value="ja">日本語</option>
+        </select>
+      </div>
+      <fieldset class="appearance-settings">
+        <legend data-i18n="appearance">绿色文字样式</legend>
+        <label><input type="checkbox" id="added-bold" /><span data-i18n="bold">加粗</span></label>
+        <label
+          ><input type="checkbox" id="added-italic" /><span data-i18n="italic">斜体</span></label
+        >
+        <p id="style-preview" data-i18n="preview">修改后的文字</p>
+      </fieldset>
+      <p class="settings-hint" data-i18n="settingsHint">
+        立即生效并自动保存；HTML 导出使用相同样式。
+      </p>
+      <div class="dialog-actions">
+        <button id="settings-close" class="primary" data-i18n="close">关闭</button>
+      </div>
+    </dialog>
+    <dialog id="import-dialog" aria-labelledby="import-heading">
+      <h2 id="import-heading" data-i18n="importTitle">导入文本</h2>
+      <label for="encoding-select" data-i18n="encoding">编码</label>
+      <select id="encoding-select">
+        <option value="utf-8">UTF-8</option>
+        <option value="utf-16le">UTF-16 LE</option>
+        <option value="utf-16be">UTF-16 BE</option>
+        <option value="gb18030">GB18030 / GBK</option>
+        <option value="windows-1252">Windows-1252</option>
+      </select>
+      <pre id="import-preview"></pre>
+      <p id="import-error" class="error" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="import-cancel" data-i18n="cancel">取消</button
+        ><button id="import-confirm" class="primary" data-i18n="import">导入</button>
+      </div>
+    </dialog>
+    <dialog id="rename-dialog" aria-labelledby="rename-heading">
+      <form id="rename-form">
+        <h2 id="rename-heading" data-i18n="rename">重命名…</h2>
+        <input
+          id="title-input"
+          data-i18n-aria="name"
+          aria-label="作文名称"
+          maxlength="200"
+          autocomplete="off"
+        />
+        <div class="dialog-actions">
+          <button type="button" id="rename-cancel" data-i18n="cancel">取消</button
+          ><button type="submit" class="primary" data-i18n="confirm">确定</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>
