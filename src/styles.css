@@ -131,10 +131,11 @@ button:disabled {
   margin-right: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  background: #fff;
+  background: #186d3a;
+  color: #fff;
 }
 #review-toggle[aria-pressed='true'] {
-  color: #186d3a;
+  color: black;
   border-color: #a8c8b2;
   background: #f3faf5;
 }
